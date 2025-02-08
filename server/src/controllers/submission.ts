@@ -8,40 +8,71 @@ import { factories } from '@strapi/strapi';
 export default factories.createCoreController('plugin::api-forms.submission', ({ strapi }) => ({
   async post(ctx) {
     const { form, submission } = ctx.request.body;
-    // if (!form) {
-    //   return ctx.badRequest('No data');
-    // }
-    // const parsedSubmission = JSON.parse(submission);
-    // const files = [];
-    // if (!form && !parsedSubmission) {
-    //   return ctx.badRequest('No data');
-    // }
-    // const strapiForm = await strapi.service('plugin::api-forms.form')!.findOne(form);
-    // if (!strapiForm) {
-    //   return ctx.badRequest('No form');
-    // }
-    // if (ctx.request.files) {
-    //   await Promise.all(
-    //     Object.entries(ctx.request.files).map(async ([key, file]) => {
-    //       const uploadedFile = await strapi.service('plugin::api-forms.submission')!.upload(file);
-    //       if (uploadedFile) {
-    //         files.push(uploadedFile);
-    //       }
-    //     })
-    //   );
-    // }
-    // const postedSubmission = await strapi.service('plugin::api-forms.submission')!.create({
-    //   data: { form, submission: JSON.stringify(parsedSubmission), files },
-    //   populate: ['form', 'files'],
-    // });
-    // return postedSubmission;
+    try {
+      const { form, submission } = ctx.request.body;
+
+      if (!form) {
+        return ctx.badRequest('No data provided');
+      }
+
+      const parsedSubmission = JSON.parse(submission);
+      const files = [];
+
+      if (!parsedSubmission) {
+        return ctx.badRequest('Invalid submission data');
+      }
+
+      // Fetch the form using Strapi 5 syntax
+      const strapiForm = await strapi
+        .plugin('api-forms')
+        .service('form')
+        .findOne({ where: { documentId: form } });
+
+      if (!strapiForm) {
+        return ctx.badRequest('Form not found');
+      }
+
+      // Handle Multiple File Uploads (Strapi 5 format)
+      if (ctx.request.files) {
+        const uploadedFiles = await strapi
+          .plugin('upload')
+          .service('upload')
+          .upload({
+            data: {}, // Optional metadata
+            files: Object.values(ctx.request.files).flat(), // Ensure it's an array
+          });
+
+        if (uploadedFiles?.length > 0) {
+          files.push(...uploadedFiles); // Store the uploaded file references
+        }
+      }
+
+      // Create Submission in Strapi 5
+      return await strapi
+        .plugin('api-forms')
+        .service('submission')
+        .create({
+          data: {
+            form: {
+              connect: form,
+            },
+            submission: JSON.stringify(parsedSubmission),
+            files: files.map((file) => file.id), // Store only file IDs
+          },
+          populate: ['form', 'files'],
+        });
+    } catch (error) {
+      strapi.log.error('Submission error:', error);
+      return ctx.internalServerError('An error occurred while submitting the form');
+    }
   },
 
   async export(ctx) {
-    // const { formId } = ctx.params;
-    // return {
-    //   data: await strapi.service('plugin::api-forms.submission')!.export(formId),
-    //   filename: `export-${formId}-${Math.random()}.csv`,
-    // };
+    const { id } = ctx.params;
+    return {
+      data: await  strapi.plugin('api-forms')
+        .service('submission').export(id),
+      filename: `export-${id}-${Math.random()}.csv`,
+    };
   },
 }));

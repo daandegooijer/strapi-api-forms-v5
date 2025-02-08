@@ -11,8 +11,7 @@ import {
   Typography,
   Dialog,
 } from '@strapi/design-system';
-import { Mail, Pencil, Plus, Trash, WarningCircle } from '@strapi/icons';
-import { useFormContext } from '../context/FormContext';
+import { Mail, Pencil, Plus, Trash, WarningCircle, Bell, Message } from '@strapi/icons';
 import { PLUGIN_ID } from '../pluginId';
 import { getTranslation } from '../utils/getTranslation';
 import {
@@ -24,27 +23,37 @@ import {
   useQueryParams,
   Pagination,
 } from '@strapi/strapi/admin';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, NavLink } from 'react-router-dom';
 import { Button } from '@strapi/design-system';
-import { IconButton } from '@strapi/design-system';
-import { IconButtonGroup } from '@strapi/design-system';
-import ExportButton from '../components/ExportButton';
+import ExportButton from '../components/Buttons/ExportButton';
+import NotificationButtonGroup from '../components/Buttons/HandlerButtonGroup';
+import NotificationModal from '../components/Modals/NotificationModal';
+import { NotificationType } from '../utils/types';
+import { FormProvider } from '../context/FormContext';
+import { Badge } from '@strapi/design-system';
+
+export const formatDate = (dateString) => {
+  return dateString.split('T')[0];
+};
 
 const HomePage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-
+  const token = useAuth('Admin', (state) => state.token);
   const { formatMessage } = useIntl();
+
+  // statess
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState(null);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
 
+  const [isModalVisible, setModalIsVisible] = useState(false);
+  const [handlerType, setHandlerType] = useState<NotificationType | null>(null);
+
   const [results, setResults] = useState([]);
   const [pagination, setPagination] = useState([]);
-
-  const token = useAuth('Admin', (state) => state.token);
 
   const [{ query }, querySet] = useQueryParams<{
     page?: number;
@@ -106,11 +115,15 @@ const HomePage = () => {
     formatMessage({
       id: getTranslation(`list.handlers`),
     }),
+    formatMessage({
+      id: getTranslation(`list.active`),
+    }),
     <VisuallyHidden>Actions</VisuallyHidden>,
   ];
 
   const handleDeleteClick = (row: any) => {
     setSelectedRow(row);
+
     setIsDialogOpen(true);
   };
 
@@ -154,6 +167,16 @@ const HomePage = () => {
                 })}
               </LinkButton>
             }
+            secondaryAction={
+              <LinkButton
+                variant="tertiary"
+                startIcon={<Mail />}
+                to={`/plugins/${PLUGIN_ID}/submissions`}
+                tag={NavLink}
+              >
+                {formatMessage({ id: getTranslation('submissions.all') })}
+              </LinkButton>
+            }
             navigationAction={<BackButton disabled={undefined} />}
           />
 
@@ -192,6 +215,8 @@ const HomePage = () => {
                               minute: 'numeric',
                               second: 'numeric',
                             }).format(new Date(row.createdAt));
+                            const formattedDateFrom = row.dateFrom ? formatDate(row.dateFrom) : '';
+                            const formattedDateTill = row.dateTill ? formatDate(row.dateTill) : '';
 
                             return (
                               <Table.Row key={row.id}>
@@ -209,38 +234,46 @@ const HomePage = () => {
                                     <LinkButton
                                       disabled={row.submissions.length === 0}
                                       variant="secondary"
-                                      href={`/admin/plugins/${PLUGIN_ID}/form/${row.documentId}/submissions`}
+                                      to={`form/${row.documentId}/submissions`}
                                       startIcon={<Mail />}
+                                      tag={NavLink}
                                     >
                                       {row.submissions.length}
                                     </LinkButton>
-                                    <ExportButton disabled={row.submissions.length === 0} />
+                                    <ExportButton
+                                      formId={row.documentId}
+                                      disabled={row.submissions.length === 0}
+                                    />
                                   </Flex>
                                 </Table.Cell>
                                 <Table.Cell>
                                   <Flex gap={2} justifyContent="flex-start">
-                                    {/* {Boolean(form.attributes?.notifications!.length) &&
-                                      form.attributes?.notifications!.map((notification) => (
-                                        <IconButton
-                                          onClick={() =>
-                                            openNotificationModal(
-                                              form,
-                                              notification.identifier as HandlerTypeEnum
-                                            )
-                                          }
-                                          label={formatMessage({
-                                            id: `${pluginId}.forms.fields.actions.${notification.identifier}`,
-                                          })}
-                                          icon={
-                                            notification.identifier ===
-                                            HandlerTypeEnum.Notification ? (
-                                              <Bell />
-                                            ) : (
-                                              <Mail />
-                                            )
-                                          }
-                                        />
-                                      ))} */}
+                                    {Boolean(row.notifications!.length) && (
+                                      <NotificationButtonGroup
+                                        notifications={row.notifications}
+                                        setModalIsVisible={setModalIsVisible}
+                                        setHandlerType={setHandlerType}
+                                      />
+                                    )}
+                                  </Flex>
+                                </Table.Cell>
+                                <Table.Cell>
+                                  <Flex gap={2} justifyContent="flex-start">
+                                    {row.active}
+                                    <Badge active={row.active}>
+                                      {formatMessage({
+                                        id: getTranslation(
+                                          `list.${row.active ? 'active' : 'inactive'}`
+                                        ),
+                                      })}
+                                    </Badge>
+                                    {row.dateFrom || row.dateTill ? (
+                                      <>
+                                        {formattedDateFrom} - {formattedDateTill}
+                                      </>
+                                    ) : (
+                                      <></>
+                                    )}
                                   </Flex>
                                 </Table.Cell>
                                 <Table.Cell>
@@ -277,6 +310,15 @@ const HomePage = () => {
                 </Box>
               </Grid.Item>
             </Grid.Root>
+            {isModalVisible && handlerType && (
+              <FormProvider>
+                <NotificationModal
+                  currentNotification={handlerType}
+                  isModalVisible={isModalVisible}
+                  setModalIsVisible={setModalIsVisible}
+                />
+              </FormProvider>
+            )}
             <Dialog.Root open={isDialogOpen} onDismiss={() => setIsDialogOpen(false)}>
               <Dialog.Content>
                 <Dialog.Header>

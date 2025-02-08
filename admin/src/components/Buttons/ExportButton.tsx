@@ -7,7 +7,7 @@ import { useFetchClient, useNotification } from '@strapi/strapi/admin';
  */
 import { LinkButton, Loader } from '@strapi/design-system';
 import { Download } from '@strapi/icons';
-import { PLUGIN_ID } from '../pluginId';
+import { PLUGIN_ID } from '../../pluginId';
 
 type ExportButtonProps = {
   formId: number;

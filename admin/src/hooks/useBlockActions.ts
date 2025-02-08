@@ -27,26 +27,7 @@ export const useBlockOperations = (
   };
 
   // Add a new block to all breakpoints
-  const addBlock = (newBlockId?: string, field?: Field) => {
-    const updatedLayouts = Object.fromEntries(
-      Object.entries(layouts).map(([breakpoint, layout]) => {
-        const newBlock: Block = {
-          i: newBlockId || `block-${Date.now()}`,
-          x: 0,
-          y: layout.length, // Add to the next row
-          w: 12,
-          h: 1,
-          minW: 4,
-          maxW: 12,
-          field: field ?? [],
-        };
-
-        return [breakpoint, adjustLayout([...layout, newBlock])];
-      })
-    );
-
-    updateLayouts(updatedLayouts);
-  };
+  const addBlock = (newBlockId?: string, field?: Field) => {};
 
   // Resize a block for the current breakpoint only
   const resizeBlock = (blockId: string) => {

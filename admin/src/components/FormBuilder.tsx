@@ -18,8 +18,7 @@ import 'react-resizable/css/styles.css';
 const margin = 8;
 
 export const FormBuilder = () => {
-  const { currentLayouts, currentBreakpoint, setCurrentBreakpoint, updateLayouts } =
-    useFormContext();
+  const { currentLayouts, currentBreakpoint, setCurrentBreakpoint } = useFormContext();
   const [isModalVisible, setModalVisible] = useState(false);
   const [currentField, setCurrentField] = useState(null);
   const [gridWidth, setGridWidth] = useState(1200); // Initial grid width

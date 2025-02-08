@@ -152,7 +152,6 @@ const FieldModal: React.FC<FieldModalProps> = ({
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {JSON.stringify(currentField)}
           <Flex direction="column" gap={4} alignItems="stretch" width="100%">
             <Field.Root name="type" id="type" error={hasAlert ? alertMessage : ''}>
               <Field.Label>

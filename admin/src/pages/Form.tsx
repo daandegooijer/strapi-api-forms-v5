@@ -240,7 +240,7 @@ const FormContent = () => {
                                 type: 'EDIT_FORM',
                                 payload: {
                                   dateTill: format(value, 'dd-MM-yyyy') + 'T00:00:00.000Z',
-                                  active: currentDate > value,
+                                  active: currentDate <= value,
                                 },
                               });
                             }}

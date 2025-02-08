@@ -6,7 +6,7 @@ import { stringify } from 'qs';
 const formRequests = {
   getForms: async (token: string, queryFilter?: object): Promise<FormResponse> => {
     const data = await fetchInstance(
-      `forms?${stringify({ pagination: { page: queryFilter.page, pageSize: queryFilter.pageSize }, fields: ['title', 'createdAt'], sort: 'createdAt:desc', populate: 'submissions' })}`,
+      `forms?${stringify({ pagination: { page: queryFilter.page, pageSize: queryFilter.pageSize }, fields: ['title', 'createdAt', 'active', 'dateFrom', 'dateTill'], sort: 'createdAt:desc', populate: ['submissions', 'notifications'] })}`,
       token,
       'GET',
       null,

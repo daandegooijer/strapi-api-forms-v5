@@ -10,7 +10,7 @@ function isJSON(str) {
 }
 
 export default {
-  async afterUpdate(event) {
+  async afterCreate(event) {
     const { result, params } = event;
 
     if (!result.id) {
@@ -22,73 +22,56 @@ export default {
     const defaultEmail =
       await strapi.plugins['email'].services.email.getProviderSettings().settings.defaultFrom;
 
-    const message = result.steps.map((step) => {
-      if (!step.layouts.lg) {
-        return '';
-      }
-
-      return step.layouts.lg.map((block) => {
-        const { field } = block;
-
-        if (field.type === 'file') {
+    const tableRows = result.steps
+      .map((step) => {
+        if (!step.layouts.lg) {
           return '';
         }
 
-        return (
-          '**' +
-          field.label +
-          '**: **' +
-          field.name +
-          '**<!--rehype:style=font-size: 12px;color: white; background: #4945ff;padding:4px; padding-right: 16px;padding-left: 16px;border-radius: 4px;-->  \n'
-        );
-      });
+        return step.layouts.lg.map((block) => {
+          const { field } = block;
+
+          if (field.type === 'file') {
+            return '';
+          }
+
+          return `<tr><td><strong>${field.label}</strong></td><td>{{${field.name}}}</td></tr>`;
+        });
+      })
+      .join('');
+
+    const message = `<table>
+              <tbody>
+           ${tableRows}
+              </tbody>
+            </table>
+                `;
+    const notification = await strapi.entityService.create('plugin::api-forms.notification', {
+      data: {
+        form: result.id,
+        enabled: true,
+        identifier: 'notification',
+        service: 'emailService',
+        from: defaultEmail,
+        to: defaultEmail,
+        message: message,
+        subject: `New submission from API form: ${result.title}`,
+      },
     });
 
-    console.log(message);
+    const confirmation = await strapi.entityService.create('plugin::api-forms.notification', {
+      data: {
+        form: result.id,
+        enabled: false,
+        identifier: 'confirmation',
+        service: 'emailService',
+        from: defaultEmail,
+        to: '',
+        subject: `Thank you for your submission on form: ${result.title}`,
+        message: message,
+      },
+    });
 
-    // const message = fields.map((field) => {
-    //   if (field.type === 'file') {
-    //     return '';
-    //   }
-
-    //   return (
-    //     '**' +
-    //     field.label +
-    //     '**: **' +
-    //     field.name +
-    //     '**<!--rehype:style=font-size: 12px;color: white; background: #4945ff;padding:4px; padding-right: 16px;padding-left: 16px;border-radius: 4px;-->  \n'
-    //   );
-    // });
-
-    // strapi.log.info('messages:');
-    // strapi.log.info(message.join('\n').toString());
-
-    // const notification = await strapi.entityService.create('plugin::api-forms.notification', {
-    //   data: {
-    //     form: result.id,
-    //     enabled: true,
-    //     identifier: 'notification',
-    //     service: 'emailService',
-    //     from: defaultEmail,
-    //     to: defaultEmail,
-    //     message: message.join('\n').toString(),
-    //     subject: 'New submission from API form: ' + result.title,
-    //   },
-    // });
-
-    // const confirmation = await strapi.entityService.create('plugin::api-forms.notification', {
-    //   data: {
-    //     form: result.id,
-    //     enabled: false,
-    //     identifier: 'confirmation',
-    //     service: 'emailService',
-    //     from: defaultEmail,
-    //     to: '',
-    //     subject: '',
-    //     message: message.join('\n').toString(),
-    //   },
-    // });
-
-    // return [confirmation, notification];
+    return [confirmation, notification];
   },
 };

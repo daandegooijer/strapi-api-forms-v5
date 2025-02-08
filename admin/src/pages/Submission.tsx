@@ -3,41 +3,56 @@ import { useIntl } from 'react-intl';
 import { useEffect, useState } from 'react';
 import {
   Box,
-  Grid,
   Flex,
+  Grid,
   LinkButton,
-  VisuallyHidden,
+  Modal,
   Typography,
-  Dialog,
+  VisuallyHidden,
 } from '@strapi/design-system';
-import { Pencil, Plus, Trash, WarningCircle } from '@strapi/icons';
-import { useFormContext } from '../context/FormContext';
+import { Eye, File } from '@strapi/icons';
 import { PLUGIN_ID } from '../pluginId';
 import { getTranslation } from '../utils/getTranslation';
 import {
   BackButton,
   Layouts,
   Page,
+  Pagination,
   Table,
   useAuth,
   useQueryParams,
-  Pagination,
 } from '@strapi/strapi/admin';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { Button } from '@strapi/design-system';
+import { NavLink, useLocation, useNavigate, useParams } from 'react-router-dom';
 import submissionRequests from '../api/submission';
 
 const Submission = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { id } = useParams();
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedSubmission, setSelectedSubmission] = useState(null);
+
+  const truncateValue = (value, maxLength = 100) => {
+    if (typeof value === 'string' && value.length > maxLength) {
+      return value.substring(0, maxLength) + '...'; // Truncate and add ellipsis
+    }
+    return value;
+  };
+
+  const handleOpenModal = (submission) => {
+    setSelectedSubmission(submission);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedSubmission(null);
+  };
 
   const { formatMessage } = useIntl();
-  const { state, dispatch } = useFormContext();
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState(null);
-
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedRow, setSelectedRow] = useState(null);
 
   const [results, setResults] = useState([]);
   const [pagination, setPagination] = useState([]);
@@ -80,6 +95,7 @@ const Submission = () => {
       setIsFetching(true);
       try {
         const response = await submissionRequests.getSubmissions(token, query);
+        console.log(response);
         setResults(response.data);
         setPagination(response.meta?.pagination);
       } catch (error) {
@@ -97,7 +113,7 @@ const Submission = () => {
   const tableHeaders: any = [
     '#',
     formatMessage({
-      id: getTranslation(`list.name`),
+      id: getTranslation(`submission.title`),
     }),
     formatMessage({
       id: getTranslation(`list.creation_date`),
@@ -105,15 +121,10 @@ const Submission = () => {
     <VisuallyHidden>Actions</VisuallyHidden>,
   ];
 
-  const handleClick = (row: any) => {
-    setSelectedRow(row);
-    setIsDialogOpen(true);
-  };
-
   if (isFetching) {
     return <Page.Loading />;
   }
-  console.log(error);
+
   if (error) {
     return <Page.Error />;
   }
@@ -127,6 +138,16 @@ const Submission = () => {
           <Layouts.Header
             title={formatMessage({ id: getTranslation('submissions.label') })}
             navigationAction={<BackButton disabled={undefined} />}
+            secondaryAction={
+              <LinkButton
+                variant="tertiary"
+                startIcon={<File />}
+                to={`/plugins/${PLUGIN_ID}`}
+                tag={NavLink}
+              >
+                {formatMessage({ id: getTranslation('forms.all') })}
+              </LinkButton>
+            }
           />
 
           <Layouts.Content>
@@ -145,19 +166,45 @@ const Submission = () => {
                       <Table.Body>
                         {results &&
                           results.map((row: any) => {
+                            const creationDate = new Intl.DateTimeFormat('nl-NL', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                              hour: 'numeric',
+                              minute: 'numeric',
+                              second: 'numeric',
+                            }).format(new Date(row.publishedAt));
+
+                            const submission = Object.entries(row.submission).map(
+                              (value, key) => `${value.join(': ')}  `
+                            );
+
+                            console.log(submission);
+
                             return (
                               <Table.Row key={row.id}>
                                 <Table.Cell>
                                   <Typography textColor="neutral800">{row.id}</Typography>
                                 </Table.Cell>
                                 <Table.Cell>
-                                  <Typography textColor="neutral800">{row.title}</Typography>
+                                  <Typography textColor="neutral800">
+                                    <div>{truncateValue(submission.join(' - '))}</div>
+                                  </Typography>
                                 </Table.Cell>
                                 <Table.Cell>
-                                  <Typography textColor="neutral800">{row.createdAt}</Typography>
+                                  <Typography textColor="neutral800">{creationDate}</Typography>
                                 </Table.Cell>
 
                                 <Table.Cell>
+                                  <LinkButton
+                                    variant="secondary"
+                                    onClick={() => handleOpenModal(row)}
+                                  >
+                                    <Flex gap={2} justifyContent="flex-start" alignItems="center">
+                                      <Eye />
+                                      View details
+                                    </Flex>
+                                  </LinkButton>
                                   {/* <Flex gap={2} justifyContent="flex-end">
                                     <LinkButton
                                       href={`/admin/plugins/${PLUGIN_ID}/form/${row.documentId}`}
@@ -191,28 +238,55 @@ const Submission = () => {
                 </Box>
               </Grid.Item>
             </Grid.Root>
-            {/* <Dialog.Root open={isDialogOpen} onDismiss={() => setIsDialogOpen(false)}>
-              <Dialog.Content>
-                <Dialog.Header>
-                  {formatMessage({ id: getTranslation('dialog.delete.text') })}
-                </Dialog.Header>
-                <Dialog.Body icon={<WarningCircle fill="danger600" />}>
-                  {formatMessage({ id: getTranslation('dialog.delete.description') })}
-                </Dialog.Body>
-                <Dialog.Footer>
-                  <Dialog.Cancel>
-                    <Button fullWidth variant="tertiary" onClick={() => setIsDialogOpen(false)}>
-                      {formatMessage({ id: getTranslation('dialog.cancel') })}
-                    </Button>
-                  </Dialog.Cancel>
-                  <Dialog.Action>
-                    <Button fullWidth variant="danger-light" onClick={handleDeleteConfirm}>
-                      {formatMessage({ id: getTranslation('dialog.confirm') })}
-                    </Button>
-                  </Dialog.Action>
-                </Dialog.Footer>
-              </Dialog.Content>
-            </Dialog.Root> */}
+            <Modal.Root open={isModalOpen && selectedSubmission} onClose={handleCloseModal}>
+              <Modal.Content>
+                <Modal.Header>
+                  <Typography variant="beta">Submission Details</Typography>
+                </Modal.Header>
+                <Modal.Body>
+                  {selectedSubmission?.submission && (
+                    <Box padding={0}>
+                      <Box background="neutral100" padding={4} shadow="tableShadow" hasRadius>
+                        {Object.entries(selectedSubmission.submission).map(([key, value]) => (
+                          <Flex
+                            key={key}
+                            marginBottom={4}
+                            justifyContent="space-between"
+                            alignItems="flex-start"
+                            wrap="wrap"
+                          >
+                            {/* Key */}
+                            <Typography
+                              fontWeight="bold"
+                              textColor="neutral800"
+                              style={{ flex: 1, maxWidth: '200px' }}
+                            >
+                              {key}:
+                            </Typography>
+                            {/* Value */}
+                            <Typography textColor="neutral800" style={{ flex: 2 }}>
+                              {typeof value === 'object' ? (
+                                <pre
+                                  style={{
+                                    margin: 0,
+                                    whiteSpace: 'pre-wrap',
+                                    wordWrap: 'break-word',
+                                  }}
+                                >
+                                  {JSON.stringify(value, null, 2)}
+                                </pre>
+                              ) : (
+                                value || 'N/A'
+                              )}
+                            </Typography>
+                          </Flex>
+                        ))}
+                      </Box>
+                    </Box>
+                  )}
+                </Modal.Body>
+              </Modal.Content>
+            </Modal.Root>
           </Layouts.Content>
         </Page.Main>
       </Layouts.Root>

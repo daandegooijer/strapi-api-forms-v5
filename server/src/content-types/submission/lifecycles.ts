@@ -1,63 +1,94 @@
-const { ForbiddenError } = require('@strapi/utils').errors;
+import { errors } from '@strapi/utils';
+const { ForbiddenError } = errors;
 
 export default {
+  /**
+   * Before creating a submission, validate and remove spam attempts.
+   */
   async beforeCreate(event) {
-    const { result, params } = event;
+    try {
+      const { params } = event;
 
-    if (!params.data.submission) {
-      throw new ForbiddenError('No submission');
+      if (!params?.data?.submission) {
+        throw new ForbiddenError('No submission provided');
+      }
+
+      // Parse submission data
+      const submission = JSON.parse(params.data.submission);
+
+      // ✅ Honeypot Spam Protection
+      const honeypotField = Object.keys(submission).find((key) => key.includes('honeypot'));
+
+      if (honeypotField && submission[honeypotField] !== '') {
+        throw new ForbiddenError('Spam detected (honeypot filled)');
+      }
+
+      // Remove honeypot field
+      delete submission[honeypotField];
+
+      // ✅ Update submission data
+      params.data.submission = JSON.stringify(submission);
+    } catch (error) {
+      strapi.log.error('beforeCreate error:', error);
+      throw new ForbiddenError('Failed to process submission.');
     }
-
-    const submission = JSON.parse(params.data.submission);
-
-    if ('honeypot' in submission && submission.honeypot !== '') {
-      throw new ForbiddenError('Honeypot filled');
-    }
-
-    delete submission.honeypot;
-
-    params.data.submission = JSON.stringify(submission);
-
-    return;
   },
 
+  /**
+   * After creating a submission, process notifications.
+   */
   async afterCreate(event) {
-    const { result, params } = event;
+    try {
+      const { result, params } = event;
 
-    if (!result) {
-      throw new ForbiddenError('No submission');
-    }
+      if (!result || !params.data.form || params.data.form.connect.length === 0) {
+        throw new ForbiddenError('No submission found');
+      }
 
-    const form = await strapi.entityService.findOne('plugin::api-forms.form', params.data.form, {
-      populate: { notifications: true, files: true },
-    });
+      const formId = params.data.form.connect[0].id;
 
-    if (!form || !form.notifications) {
-      return;
-    }
+      if (!formId) {
+        throw new ForbiddenError('No form found');
+      }
 
-    //@ts-ignore
-    const enabledNotifications = form.notifications.filter((handler) => handler.enabled);
+      // // ✅ Fetch the related form with notifications
+      const form = await strapi.documents('plugin::api-forms.form').findFirst({
+        where: { id: formId },
+        populate: ['notifications'],
+      });
 
-    if (!enabledNotifications) {
-      return;
-    }
-
-    enabledNotifications.forEach(async (handler) => {
-      if (!handler.service) {
+      if (!form?.notifications?.length) {
         return;
       }
 
-      const response = await strapi
-        .plugin('api-forms')
-        .service('notification')
-        .process(handler, result, form);
+      // // ✅ Filter enabled notifications
+      const enabledNotifications = form.notifications.filter((handler) => handler.enabled);
 
-      return {
-        ...response,
-        handler,
-        result: 'success',
-      };
-    });
+      if (enabledNotifications.length === 0) {
+        return;
+      }
+
+      // ✅ Process notifications sequentially (ensuring await works correctly)
+      for (const handler of enabledNotifications) {
+        if (!handler.service) {
+          continue;
+        }
+
+        try {
+          const response = await strapi
+            .plugin('api-forms')
+            .service('notification')
+            .process(handler, result, form);
+
+          strapi.log.info(`Notification sent successfully: ${JSON.stringify(response)}`);
+        } catch (error) {
+          strapi.log.error('Notification sending failed:', console.dir(error, { depth: null }));
+        }
+      }
+    } catch (error) {
+      strapi.log.error('afterCreate error:', error);
+      console.dir(error, { depth: null });
+      throw new ForbiddenError('Failed to process notifications.');
+    }
   },
 };

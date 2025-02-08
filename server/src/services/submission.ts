@@ -6,13 +6,17 @@ import { AsyncParser } from '@json2csv/node';
 
 export default factories.createCoreService('plugin::api-forms.submission', ({ strapi }) => ({
   async export(formId) {
-    const entities = await strapi.entityService.findMany('plugin::api-forms.submission', {
-      filters: { form: formId },
-    });
+    //@ts-ignore
+    const entities = await strapi.documents('plugin::api-forms.form').findFirst({ filters: { documentId: formId }, populate: {submissions: '*'}},
+    );
 
-    const data = entities.map((result) => {
+    if (!entities || entities.submissions.length === 0) {
+      return;
+    }
+
+    const data = entities.submissions.map((result) => {
       return {
-        ...JSON.parse(result.submission),
+        ...result.submission,
         createdAt: result.createdAt,
       };
     });

@@ -7,11 +7,11 @@ export default {
         path: '/submission/post',
         handler: 'submission.post',
       },
-      // {
-      //   method: 'GET',
-      //   path: '/fields/:formId',
-      //   handler: 'form.fields',
-      // },
+      {
+        method: 'GET',
+        path: '/form/:id',
+        handler: 'form.getFormConfig',
+      },
     ],
   },
   admin: {
@@ -33,38 +33,14 @@ export default {
           policies: ['admin::isAuthenticatedAdmin'],
         },
       },
-      //     {
-      //       method: 'GET',
-      //       path: '/submissions/export/:formId',
-      //       handler: 'submission.export',
-      //       config: {
-      //         policies: ['admin::isAuthenticatedAdmin'],
-      //       },
-      //     },
-      //     {
-      //       method: 'GET',
-      //       path: '/submission/:id',
-      //       handler: 'submission.get',
-      //       config: {
-      //         policies: ['admin::isAuthenticatedAdmin'],
-      //       },
-      //     },
-      //     {
-      //       method: 'GET',
-      //       path: '/form/:id/submissions',
-      //       handler: 'form.submissions',
-      //       config: {
-      //         policies: ['admin::isAuthenticatedAdmin'],
-      //       },
-      //     },
-      //     {
-      //       method: 'GET',
-      //       path: '/form/:id/message',
-      //       handler: 'form.message',
-      //       config: {
-      //         policies: ['admin::isAuthenticatedAdmin'],
-      //       },
-      //     },
+      {
+        method: 'GET',
+        path: '/submissions/export/:id',
+        handler: 'submission.export',
+        config: {
+          policies: ['admin::isAuthenticatedAdmin'],
+        },
+      },
       {
         method: 'POST',
         path: '/forms',
@@ -97,14 +73,30 @@ export default {
           policies: ['admin::isAuthenticatedAdmin'],
         },
       },
-      //     {
-      //       method: 'PUT',
-      //       path: '/notifications/update/:id',
-      //       handler: 'notification.updateNotification',
-      //       config: {
-      //         policies: ['admin::isAuthenticatedAdmin'],
-      //       },
-      //     },
+      {
+        method: 'GET',
+        path: '/notifications/:documentId',
+        handler: 'notification.findOne',
+        config: {
+          policies: ['admin::isAuthenticatedAdmin'],
+        },
+      },
+      {
+        method: 'PUT',
+        path: '/notifications/update/:id',
+        handler: 'notification.update',
+        config: {
+          policies: ['admin::isAuthenticatedAdmin'],
+        },
+      },
+      {
+        method: 'POST',
+        path: '/notifications/test/:id',
+        handler: 'notification.test',
+        config: {
+          policies: ['admin::isAuthenticatedAdmin'],
+        },
+      },
     ],
   },
 };

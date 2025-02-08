@@ -1,3 +1,4 @@
+import { Step } from '../context/FormContext';
 import { FieldDirectionEnum, FieldTypeEnum, HandlerTypeEnum } from './enums';
 import * as React from 'react';
 
@@ -43,7 +44,7 @@ export interface FormType {
   active: boolean;
   dateFrom: string;
   dateTill: string;
-  steps: string;
+  steps: Step[];
   createdAt?: string;
   updatedAt?: string;
   submission?: {
@@ -55,6 +56,7 @@ export interface FormType {
 
 export interface NotificationType {
   id: number;
+  documentId: string;
   from: string;
   to: string;
   subject: string;
@@ -64,6 +66,7 @@ export interface NotificationType {
   updatedAt: string;
   message: string;
   service: string;
+  form?: FormType;
 }
 
 export type FormCollectionType = Array<FormType>;

@@ -1,12 +1,46 @@
 //@ts-nocheck
 import fetchInstance from '../utils/fetch';
-import { NotificationRequest } from '../utils/types';
+import { NotificationRequest, NotificationType } from '../utils/types';
 
 const notificationRequests = {
-  update: async (id: any, formData?: object): Promise<NotificationRequest> => {
-    const data = await fetchInstance(`notifications/update/${id}`, 'PUT', null, formData, true);
+  update: async (token: string, id: any, formData?: object): Promise<NotificationRequest> => {
+    const body = formData;
 
-    return data.json();
+    delete body.id;
+    delete body.documentId;
+    delete body.createdAt;
+    delete body.updatedAt;
+    delete body.publishedAt;
+    delete body.form;
+
+    const data = await fetchInstance(`notifications/update/${id}`, token, 'PUT', null, body, true);
+
+    const notification = await data.json();
+
+    return notification.data;
+  },
+
+  get: async (token: string, id: string): Promise<NotificationType> => {
+    const data = await fetchInstance(`notifications/${id}`, token, 'GET', null, null, true);
+
+    const notification = await data.json();
+
+    return notification.data;
+  },
+
+  test: async (token: string, id: string): Promise<any> => {
+    return await fetchInstance(
+      `notifications/test/${id}`,
+      token,
+      'POST',
+      null,
+      {
+        data: {
+          notificationId: id,
+        },
+      },
+      true
+    );
   },
 };
 

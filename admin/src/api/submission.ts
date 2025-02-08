@@ -14,6 +14,8 @@ const submissionRequests = {
       null,
       true
     );
+
+    return data.json();
   },
 
   getSubmission: async (token: string, id: string): Promise<SubmissionResponse> => {

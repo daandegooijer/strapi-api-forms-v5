@@ -10,6 +10,7 @@ const App = () => {
       <Routes>
         <Route index element={<HomePage />} />
         <Route path="/submissions" element={<Submission />} />
+        <Route path="/form/:id/submissions" element={<Submission />} />
         <Route path="/form" element={<Form />} />
         <Route path={`/form/:id`} element={<Form />} />
         <Route path="*" element={<Page.Error />} />

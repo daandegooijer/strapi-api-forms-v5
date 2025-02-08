@@ -29,19 +29,19 @@ export interface Block {
   h: number;
   minW?: number;
   maxW?: number;
-  field: Field | [];
+  field: Field;
 }
 
 export interface Layouts {
   [breakpoint: string]: Block[]; // Layouts for each breakpoint
 }
 
-interface Step {
+export interface Step {
   id: number;
   layouts: Layouts;
 }
 
-interface State {
+export interface State {
   id?: number;
   title?: string;
   steps: Step[];
@@ -139,7 +139,7 @@ const reducer = (state: State, action: Action): State => {
             acc[breakpoint] =
               step.layouts[breakpoint]?.map((block) => {
                 // Check if the block contains the field to be edited
-                return block.i === action.payload.field.i
+                return block.i === action.payload.field.blockId
                   ? {
                       ...block,
                       field: action.payload.field, // Update the field
