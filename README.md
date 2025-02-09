@@ -8,7 +8,8 @@ A Strapi 5 plugin to create dynamic webforms, manage submission handlers and vie
 
 ## 🚀 Features
 
-- **Create Dynamic Forms**
+- **Create Dynamic Forms with form builder**
+  - Generate form with AI
   - Create forms:
     - Possibility to define a start/end date
     - Add success and error message
@@ -23,6 +24,20 @@ A Strapi 5 plugin to create dynamic webforms, manage submission handlers and vie
     - WYSIWYG editor with placeholders for the created form fields
     - Test e-mail
 - **View and export submissions**
+
+---
+
+## 👏 Support My Work
+
+Hey there! I'm actively maintaining this project on my free time, and if you've found it useful, I'd greatly appreciate
+your support. Donations will help cover hosting costs, tools, and allow me to dedicate additional time for updates,
+features, and bug fixes.
+
+You can contribute by donating through this link:
+
+[![Donate via PayPal](https://img.shields.io/badge/Donate-PayPal-blue.svg)](https://www.paypal.com/donate/?business=DFMEGWFQUZHCQ&no_recurring=0&currency_code=EUR)
+
+I’d be forever grateful for your generosity. Thank you for helping keep this project alive and growing! ❤️
 
 ---
 
@@ -58,22 +73,45 @@ To configure the plugin, add the following to your `config/plugins.js` file:
 module.exports = {
   "api-forms": {
     enabled: true,
+    // When using AI functionality
+    config: {
+      ai: {
+        enabled: true,
+        apiEndpoint: env('OPEN_AI_API_ENDPOINT', 'https://api.openai.com/v1/chat/completions'),
+        apiKey: env('OPEN_AI_SECRET_KEY', ''),
+        model: 'gpt-4',
+        temperature: 0.3,
+
+      }
+    }
   }
 };
 ```
 
-## 👏 Support My Work
+## 🚀 Roadmap
 
-Hey there! I'm actively maintaining this project on my free time, and if you've found it useful, I'd greatly appreciate
-your support. Donations will help cover hosting costs, tools, and allow me to dedicate additional time for updates,
-features, and bug fixes.
+Here are the upcoming features and improvements planned for this project:
 
-You can contribute by donating through this link:
+- **Multi-Step Form:**  
+  Implement a user-friendly multi-step form for better segmentation and organization of complex inputs.
 
-[![Donate via PayPal](https://img.shields.io/badge/Donate-PayPal-blue.svg)](https://www.paypal.com/donate?hosted_button_id=YOUR_BUTTON_ID)
+- **Relational Fields with Content Types:**  
+  Add support for relational fields that dynamically populate dropdowns (`select` options) or other inputs from linked
+  content types.
 
-I’d be forever grateful for your generosity. Thank you for helping keep this project alive and growing! ❤️
+- **Dependent Fields:**  
+  Introduce dependable fields that show or hide based on other field values for improved interactivity and usability.
+
+- **New Field Types:**  
+  Add additional field types such as:
+  - Date picker
+  - Time picker
+  - Other necessary custom field types for diverse use cases.
+
 ---
+
+**Note:** This is an evolving roadmap, and features may adjust based on user feedback and development priorities. If you
+have any suggestions or ideas, feel free to contribute! 😊
 
 ## 🤔 FAQ
 

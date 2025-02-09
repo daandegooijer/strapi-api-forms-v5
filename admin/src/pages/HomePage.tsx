@@ -3,34 +3,35 @@ import { useIntl } from 'react-intl';
 import { useEffect, useState } from 'react';
 import formRequests from '../api/form';
 import {
+  Badge,
   Box,
-  Grid,
-  Flex,
-  LinkButton,
-  VisuallyHidden,
-  Typography,
+  Button,
   Dialog,
+  Flex,
+  Grid,
+  LinkButton,
+  Typography,
+  VisuallyHidden,
 } from '@strapi/design-system';
-import { Mail, Pencil, Plus, Trash, WarningCircle, Bell, Message } from '@strapi/icons';
+import { Mail, Pencil, Plus, Trash, WarningCircle } from '@strapi/icons';
 import { PLUGIN_ID } from '../pluginId';
 import { getTranslation } from '../utils/getTranslation';
 import {
   BackButton,
   Layouts,
   Page,
+  Pagination,
   Table,
   useAuth,
   useQueryParams,
-  Pagination,
 } from '@strapi/strapi/admin';
-import { useLocation, useNavigate, NavLink } from 'react-router-dom';
-import { Button } from '@strapi/design-system';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import ExportButton from '../components/Buttons/ExportButton';
 import NotificationButtonGroup from '../components/Buttons/HandlerButtonGroup';
 import NotificationModal from '../components/Modals/NotificationModal';
 import { NotificationType } from '../utils/types';
 import { FormProvider } from '../context/FormContext';
-import { Badge } from '@strapi/design-system';
+import GenerateForm from '../components/Buttons/GenerateForm';
 
 export const formatDate = (dateString) => {
   return dateString.split('T')[0];
@@ -42,7 +43,7 @@ const HomePage = () => {
   const token = useAuth('Admin', (state) => state.token);
   const { formatMessage } = useIntl();
 
-  // statess
+  // states
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState(null);
 
@@ -55,7 +56,9 @@ const HomePage = () => {
   const [results, setResults] = useState([]);
   const [pagination, setPagination] = useState([]);
 
-  const [{ query }, querySet] = useQueryParams<{
+  const [fetchForms, setFetchForms] = useState(false);
+
+  const [{ query }] = useQueryParams<{
     page?: number;
     pageSize?: number;
   }>({
@@ -80,7 +83,7 @@ const HomePage = () => {
     };
 
     fetchForms();
-  }, [navigate]);
+  }, [navigate, fetchForms]);
 
   useEffect(() => {
     const fetchForms = async () => {
@@ -158,14 +161,17 @@ const HomePage = () => {
           <Layouts.Header
             title={formatMessage({ id: getTranslation('forms.label') })}
             primaryAction={
-              <LinkButton
-                startIcon={<Plus style={{ fill: 'white' }} />}
-                href={`/admin/plugins/${PLUGIN_ID}/form/add`}
-              >
-                {formatMessage({
-                  id: getTranslation('forms.subtitle'),
-                })}
-              </LinkButton>
+              <Flex gap={4}>
+                <GenerateForm onGenerateSuccess={setFetchForms} />
+                <LinkButton
+                  startIcon={<Plus style={{ fill: 'white' }} />}
+                  href={`/admin/plugins/${PLUGIN_ID}/form/add`}
+                >
+                  {formatMessage({
+                    id: getTranslation('forms.subtitle'),
+                  })}
+                </LinkButton>
+              </Flex>
             }
             secondaryAction={
               <LinkButton

@@ -27,6 +27,14 @@ export default {
       },
       {
         method: 'GET',
+        path: '/forms/settings',
+        handler: 'form.settings',
+        config: {
+          policies: ['admin::isAuthenticatedAdmin'],
+        },
+      },
+      {
+        method: 'GET',
         path: '/submissions',
         handler: 'submission.find',
         config: {
@@ -45,6 +53,14 @@ export default {
         method: 'POST',
         path: '/forms',
         handler: 'form.create',
+        config: {
+          policies: ['admin::isAuthenticatedAdmin'],
+        },
+      },
+      {
+        method: 'POST',
+        path: '/forms/generate',
+        handler: 'form.generate',
         config: {
           policies: ['admin::isAuthenticatedAdmin'],
         },

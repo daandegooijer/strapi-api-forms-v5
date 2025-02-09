@@ -1,12 +1,23 @@
 //@ts-nocheck
 import fetchInstance from '../utils/fetch';
-import { FormResponse, FormType, FormRequest, MessageType } from '../utils/types';
+import { FormRequest, FormResponse, FormType, MessageType } from '../utils/types';
 import { stringify } from 'qs';
 
 const formRequests = {
+  getSettings: async (token: string): Promise<any> => {
+    const data = await fetchInstance(`forms/settings`, token, 'GET', null, null, true);
+
+    return data.json();
+  },
+
   getForms: async (token: string, queryFilter?: object): Promise<FormResponse> => {
     const data = await fetchInstance(
-      `forms?${stringify({ pagination: { page: queryFilter.page, pageSize: queryFilter.pageSize }, fields: ['title', 'createdAt', 'active', 'dateFrom', 'dateTill'], sort: 'createdAt:desc', populate: ['submissions', 'notifications'] })}`,
+      `forms?${stringify({
+        pagination: { page: queryFilter.page, pageSize: queryFilter.pageSize },
+        fields: ['title', 'createdAt', 'active', 'dateFrom', 'dateTill'],
+        sort: 'createdAt:desc',
+        populate: ['submissions', 'notifications'],
+      })}`,
       token,
       'GET',
       null,
@@ -52,6 +63,15 @@ const formRequests = {
     return form.data;
   },
 
+  generateForm: async (token: string, formData?: object): Promise<any> => {
+    try {
+      const data = await fetchInstance(`forms/generate`, token, 'POST', null, formData, true);
+
+      return data.json();
+    } catch (error) {
+      throw new Error('Failed to generate form');
+    }
+  },
   submitForm: async (token: string, formData?: object): Promise<FormRequest> => {
     try {
       const data = await fetchInstance(`forms`, token, 'POST', null, formData, true);
