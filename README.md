@@ -7,7 +7,7 @@ A Strapi 5 plugin to create dynamic webforms, manage submission handlers and vie
 ![img_1.png](img_1.png)
 
 **Generating forms with A.I.**
-![img_2.png](img_2.png)
+![example.gif](example.gif)
 
 ## 🚀 Features
 
