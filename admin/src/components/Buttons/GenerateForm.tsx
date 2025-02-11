@@ -40,7 +40,7 @@ const GenerateForm = ({ onGenerateSuccess }: { onGenerateSuccess: Function }) =>
     try {
       // Example request to send prompt to AI API
       const response = await formRequests.generateForm(token!, { prompt: aiPrompt });
-
+      console.log(response);
       setIsDialogOpen(false);
       setAiPrompt('');
       onGenerateSuccess(true);

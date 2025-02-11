@@ -26,19 +26,34 @@ export default factories.createCoreController('plugin::api-forms.form', ({ strap
     const { apiEndpoint, apiKey, model, temperature } = ai;
 
     const systemPrompt = `
-        You are a form generator. Your job is to create structured JSON schemas for multi-step forms based on user description.
-        Each form must use this structure:
-        {
-          steps: [{id: number, layouts: {lg: [{i: string, x: number, y: number, w: number, h: number, field: {type: string, label: string, name: string, placeholder: string}}]}}],
-          title: string,
-          successMessage: string,
-          errorMessage: string,
-          active: boolean,
-          dateFrom: string,
-          dateTill: string
-        }.
-        Use clear keys and valid values for form configuration.
-      `;
+You are a form generator. Your task is to create valid JSON schemas for multi-step forms based on user descriptions.
+
+The required structure is:
+{
+  steps: [
+    {
+      id: number,
+      layouts: {
+        lg: [{ i: string, x: number, y: number, w: number, h: number, field: { type: string, label: string, name: string, placeholder: string } }],
+        md: [{ i: string, x: number, y: number, w: number, h: number, field: { type: string, label: string, name: string, placeholder: string } }],
+        sm: [{ i: string, x: number, y: number, w: number, h: number, field: { type: string, label: string, name: string, placeholder: string } }]
+      }
+    }
+  ],
+  title: string,
+  successMessage: string,
+  errorMessage: string,
+  active: boolean,
+  dateFrom: string,
+  dateTill: string
+}.
+
+Guidelines:
+1. All fields must occupy full width (\`w = 12\`) for every breakpoint (\`lg\`, \`md\`, \`sm\`).
+2. Layouts for \`md\` and \`sm\` can inherit or adapt from \`lg\`.
+3. Use consistent and valid JSON for output.
+Keep the schema concise and focus on user description.
+ `;
 
     if (!apiKey) {
       return ctx.badRequest('OpenAI API key is not configured. Please set it in plugin settings.');
@@ -77,12 +92,10 @@ export default factories.createCoreController('plugin::api-forms.form', ({ strap
       //@ts-ignore
       const { choices } = await openAIResponse.json();
       const aiOutput = choices[0]?.message?.content;
-      console.log(aiOutput);
-
       const generatedFormJson = JSON.parse(aiOutput);
 
       const validFormState = {
-        steps: adjustLayouts(generatedFormJson.steps || []), // Adjust steps,
+        steps: generatedFormJson.steps || [], // Adjust steps,
         title: generatedFormJson.title || 'Untitled Form',
         currentStep: 0,
         successMessage: generatedFormJson.successMessage || 'Form submitted successfully!',
@@ -148,20 +161,18 @@ export default factories.createCoreController('plugin::api-forms.form', ({ strap
           fields: layouts.lg.map((fieldLayout) => {
             const fieldData = fieldLayout.field;
 
+            const lgWidth = widthClassMap[fieldLayout.w] || 'col-span-full';
+            const mdWidth =
+              widthClassMap[layouts.md.find((f) => f.i === fieldLayout.i)?.w] || 'col-span-full';
+            const smWidth =
+              widthClassMap[layouts.sm.find((f) => f.i === fieldLayout.i)?.w] || 'col-span-full';
+
             return {
               name: fieldData.name,
               type: fieldData.type,
               label: fieldData.label,
               placeholder: fieldData.placeholder || '',
-              classnames: {
-                lg: widthClassMap[fieldLayout.w] || 'col-span-full',
-                md:
-                  widthClassMap[layouts.md.find((f) => f.i === fieldLayout.i)?.w] ||
-                  'col-span-full',
-                sm:
-                  widthClassMap[layouts.sm.find((f) => f.i === fieldLayout.i)?.w] ||
-                  'col-span-full',
-              },
+              classnames: `${smWidth} lg:${lgWidth} md:${mdWidth}`,
               options: fieldData.options || [],
               validation: { required: fieldData.config?.required },
             };
@@ -182,45 +193,3 @@ export default factories.createCoreController('plugin::api-forms.form', ({ strap
     }
   },
 }));
-
-const adjustLayouts = (steps: any[]) => {
-  return steps.map((step) => {
-    const defaultLayouts = {
-      lg: [],
-      md: [],
-      sm: [],
-    };
-
-    for (const point of ['lg', 'md', 'sm']) {
-      // Use existing layouts or initialize empty array
-      defaultLayouts[point] = (step.layouts[point] || step.layouts.breakpoint || []).map(
-        (layout) => ({
-          ...layout,
-          w: 12, // Ensure 'w' is always set to 12
-        })
-      );
-    }
-
-    // Fill in missing breakpoints (if md or sm is empty, copy from lg)
-    if (defaultLayouts['md'].length === 0) {
-      defaultLayouts['md'] = defaultLayouts['lg'].map((layout) => ({
-        ...layout,
-        x: 0, // Reset positions for the new breakpoint
-        y: 0,
-      }));
-    }
-
-    if (defaultLayouts['sm'].length === 0) {
-      defaultLayouts['sm'] = defaultLayouts['lg'].map((layout) => ({
-        ...layout,
-        x: 0, // Reset positions for the new breakpoint
-        y: 0,
-      }));
-    }
-
-    return {
-      ...step,
-      layouts: defaultLayouts, // Replace layouts with updated breakpoints
-    };
-  });
-};
