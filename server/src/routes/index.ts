@@ -12,6 +12,16 @@ export default {
         path: '/form/:id',
         handler: 'form.getFormConfig',
       },
+      {
+        method: 'GET',
+        path: '/forms',
+        handler: 'form.find',
+      },
+      {
+        method: 'GET',
+        path: '/forms/:id',
+        handler: 'form.findOne',
+      },
     ],
   },
   admin: {
