@@ -15,7 +15,7 @@
   "api-forms.alert.description.danger": "Please make sure all fields are filled.",
   "api-forms.back_to_dashboard": "Back to dashboard",
   "api-forms.back_to_overview": "Back to overview",
-  "api-forms.back_to_form": "View all form submissions",
+  "api-forms.back_to_form": "Continue editing",
   "api-forms.cancel": "Cancel",
   "api-forms.close": "Close",
   "api-forms.exists": "Field already exists",
