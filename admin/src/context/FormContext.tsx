@@ -1,12 +1,5 @@
 //@ts-nocheck
-import React, {
-  createContext,
-  useContext,
-  ReactNode,
-  useReducer,
-  useEffect,
-  useState,
-} from 'react';
+import React, { createContext, ReactNode, useContext, useReducer, useState } from 'react';
 import { useBlockOperations } from '../hooks/useBlockActions';
 
 // Typings for Fields, Blocks, and Steps
@@ -248,12 +241,7 @@ export const FormProvider = ({ children }: { children: ReactNode }) => {
 
   // Block operations
   const blockOperations = useBlockOperations(currentLayouts, updateLayouts, currentBreakpoint);
-
-  // Save state to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem('formState', JSON.stringify(state));
-  }, [state]);
-
+  
   return (
     <FormContext.Provider
       value={{

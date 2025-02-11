@@ -4,21 +4,20 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useIntl } from 'react-intl';
 import { getTranslation } from '../utils/getTranslation';
 import {
-  Button,
   Box,
+  Button,
   DatePicker,
   Field,
+  Flex,
   Grid,
   Textarea,
-  Flex,
   Typography,
 } from '@strapi/design-system';
 import { useEffect, useState } from 'react';
 import { Pencil } from '@strapi/icons';
 import { format } from 'date-fns';
-import { BackButton, Layouts, Page } from '@strapi/strapi/admin';
+import { BackButton, Layouts, Page, useAuth } from '@strapi/strapi/admin';
 import AlertWrapper from '../components/Layout/AlertWrapper';
-import { useAuth } from '@strapi/strapi/admin';
 import formRequests from '../api/form';
 import omit from 'lodash/omit';
 import { PLUGIN_ID } from '../pluginId';
@@ -88,6 +87,7 @@ const FormContent = () => {
     } catch (error: any) {
       setAlertMessage(error.message);
       setAlertVariant('danger');
+
       return toggleAlert(true);
     }
   };
