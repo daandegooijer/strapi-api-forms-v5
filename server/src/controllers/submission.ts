@@ -1,13 +1,10 @@
 /**
  *  controller
  */
-//@ts-nocheck
-
 import { factories } from '@strapi/strapi';
 
 export default factories.createCoreController('plugin::api-forms.submission', ({ strapi }) => ({
   async post(ctx) {
-    const { form, submission } = ctx.request.body;
     try {
       const { form, submission } = ctx.request.body;
 
@@ -15,18 +12,15 @@ export default factories.createCoreController('plugin::api-forms.submission', ({
         return ctx.badRequest('No data provided');
       }
 
-      const parsedSubmission = JSON.parse(submission);
       const files = [];
 
-      if (!parsedSubmission) {
+      if (!submission) {
         return ctx.badRequest('Invalid submission data');
       }
 
-      // Fetch the form using Strapi 5 syntax
       const strapiForm = await strapi
-        .plugin('api-forms')
-        .service('form')
-        .findOne({ where: { documentId: form } });
+        .documents('plugin::api-forms.form')
+        .findOne({ documentId: form });
 
       if (!strapiForm) {
         return ctx.badRequest('Form not found');
@@ -47,31 +41,26 @@ export default factories.createCoreController('plugin::api-forms.submission', ({
         }
       }
 
-      // Create Submission in Strapi 5
-      return await strapi
-        .plugin('api-forms')
-        .service('submission')
-        .create({
-          data: {
-            form: {
-              connect: form,
-            },
-            submission: JSON.stringify(parsedSubmission),
-            files: files.map((file) => file.id), // Store only file IDs
+      return await strapi.documents('plugin::api-forms.submission').create({
+        data: {
+          form: {
+            connect: form,
           },
-          populate: ['form', 'files'],
-        });
+          submission: JSON.stringify(submission),
+          files: files.map((file) => file.id), // Store only file IDs
+        },
+        populate: ['form', 'files'],
+      });
     } catch (error) {
       strapi.log.error('Submission error:', error);
-      return ctx.internalServerError('An error occurred while submitting the form');
+      return ctx.internalServerError(JSON.stringify(error.message, error.stack));
     }
   },
 
   async export(ctx) {
     const { id } = ctx.params;
     return {
-      data: await  strapi.plugin('api-forms')
-        .service('submission').export(id),
+      data: await strapi.plugin('api-forms').service('submission').export(id),
       filename: `export-${id}-${Math.random()}.csv`,
     };
   },

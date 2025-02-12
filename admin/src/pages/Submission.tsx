@@ -5,6 +5,7 @@ import {
   Box,
   Flex,
   Grid,
+  Button,
   LinkButton,
   Modal,
   Typography,
@@ -95,7 +96,6 @@ const Submission = () => {
       setIsFetching(true);
       try {
         const response = await submissionRequests.getSubmissions(token, query);
-        console.log(response);
         setResults(response.data);
         setPagination(response.meta?.pagination);
       } catch (error) {
@@ -179,8 +179,6 @@ const Submission = () => {
                               (value, key) => `${value.join(': ')}  `
                             );
 
-                            console.log(submission);
-
                             return (
                               <Table.Row key={row.id}>
                                 <Table.Cell>
@@ -205,23 +203,6 @@ const Submission = () => {
                                       View details
                                     </Flex>
                                   </LinkButton>
-                                  {/* <Flex gap={2} justifyContent="flex-end">
-                                    <LinkButton
-                                      href={`/admin/plugins/${PLUGIN_ID}/form/${row.documentId}`}
-                                      startIcon={<Pencil />}
-                                      style={{ fill: 'white', color: 'white' }}
-                                    >
-                                      {formatMessage({ id: getTranslation('actions.edit') })}
-                                    </LinkButton>
-                                    <LinkButton
-                                      variant="danger"
-                                      startIcon={<Trash />}
-                                      onClick={() => handleClick(row)}
-                                      style={{ fill: 'white', color: 'white' }}
-                                    >
-                                      {formatMessage({ id: getTranslation('actions.delete') })}
-                                    </LinkButton>
-                                  </Flex> */}
                                 </Table.Cell>
                               </Table.Row>
                             );
@@ -238,7 +219,7 @@ const Submission = () => {
                 </Box>
               </Grid.Item>
             </Grid.Root>
-            <Modal.Root open={isModalOpen && selectedSubmission} onClose={handleCloseModal}>
+            <Modal.Root open={isModalOpen && selectedSubmission} onOpenChange={handleCloseModal}>
               <Modal.Content>
                 <Modal.Header>
                   <Typography variant="beta">Submission Details</Typography>
@@ -285,6 +266,13 @@ const Submission = () => {
                     </Box>
                   )}
                 </Modal.Body>
+                <Modal.Footer>
+                  <Modal.Close>
+                    <Button variant="tertiary">
+                      {formatMessage({ id: getTranslation('close') })}
+                    </Button>
+                  </Modal.Close>
+                </Modal.Footer>
               </Modal.Content>
             </Modal.Root>
           </Layouts.Content>

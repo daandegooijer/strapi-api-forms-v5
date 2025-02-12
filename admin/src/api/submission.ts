@@ -6,11 +6,13 @@ import { stringify } from 'qs';
 const submissionRequests = {
   getSubmissions: async (token: string, queryFilter?: object): Promise<SubmissionsResponse> => {
     const data = await fetchInstance(
-      `submissions?${stringify({ pagination: { page: queryFilter.page, pageSize: queryFilter.pageSize } })}`,
+      `submissions?${stringify({
+        sort: 'publishedAt:desc',
+        pagination: { page: queryFilter.page, pageSize: queryFilter.pageSize },
+      })}`,
       token,
       'GET',
       null,
-
       null,
       true
     );
