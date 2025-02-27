@@ -52,13 +52,13 @@ directory:
 ### Yarn:
 
 ```bash
-yarn add strapi-api-forms-v5
+yarn add strapi-api-forms
 ```
 
 ### NPM:
 
 ```bash
-npm install strapi-api-forms-v5
+npm install strapi-api-forms
 ```
 
 ---
