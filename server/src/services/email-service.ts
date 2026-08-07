@@ -1,4 +1,4 @@
-import { getFiles, getValueFromSubmissionByKey, replaceDynamicVariables, validateEmail } from '../functions';
+import { getFiles, getRequestFileAttachments, getValueFromSubmissionByKey, replaceDynamicVariables, validateEmail } from '../functions';
 import { FormType, NotificationType, SubmissionType, EmailSubmissionType } from '../../../admin/src/utils/types';
 
 /**
@@ -51,23 +51,28 @@ export default {
 				html: messageWithReferer,
 			};
 
-			if (submission.files?.length > 0) {
-				try {
-					const files = await getFiles(submission, providerSettings.provider);
-					if (files.length > 0) {
-						if (providerSettings.provider === 'mailgun') {
-							//@ts-ignore
-							emailSubmission.attachment = files.map((file) => ({
-								filename: file.filename,
-								data: Buffer.from(file.content, 'base64'), // convert back to buffer
-							}));
-						} else {
-							emailSubmission.attachments = files;
-						}
+			try {
+				// Stored uploads are read back from the media library. When storing
+				// is off there is nothing to read back, so fall back to the uploads
+				// of the request that is being handled right now.
+				const files =
+					submission.files?.length > 0
+						? await getFiles(submission, providerSettings.provider)
+						: await getRequestFileAttachments();
+
+				if (files.length > 0) {
+					if (providerSettings.provider === 'mailgun') {
+						//@ts-ignore
+						emailSubmission.attachment = files.map((file) => ({
+							filename: file.filename,
+							data: Buffer.isBuffer(file.content) ? file.content : Buffer.from(file.content, 'base64'),
+						}));
+					} else {
+						emailSubmission.attachments = files;
 					}
-				} catch (error) {
-					strapi.log.error('Failed to process file attachments:', error);
 				}
+			} catch (error) {
+				strapi.log.error('Failed to process file attachments:', error);
 			}
 
 			strapi.log.info(`Sending email to ${emailAddress}`);
