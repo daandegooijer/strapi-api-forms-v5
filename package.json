@@ -105,5 +105,9 @@
 		"url": "https://github.com/ef2-digital/strapi-api-forms-v5/issues"
 	},
 	"homepage": "https://github.com/ef2-digital/strapi-api-forms-v5#readme",
-	"author": "Daan de Gooijer <info@daandegooijer.nl>"
+	"author": "Daan de Gooijer <info@daandegooijer.nl>",
+	"packageManager": "yarn@4.9.2",
+	"engines": {
+		"node": ">=18.0.0 <=22.x.x"
+	}
 }
