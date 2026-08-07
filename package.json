@@ -28,7 +28,8 @@
 		"watch:link": "strapi-plugin watch:link",
 		"verify": "strapi-plugin verify",
 		"test:ts:front": "run -T tsc -p admin/tsconfig.json",
-		"test:ts:back": "run -T tsc -p server/tsconfig.json"
+		"test:ts:back": "run -T tsc -p server/tsconfig.json",
+		"prepublishOnly": "yarn build"
 	},
 	"dependencies": {
 		"@faker-js/faker": "^9.4.0",
