@@ -28,7 +28,8 @@
 		"watch:link": "strapi-plugin watch:link",
 		"verify": "strapi-plugin verify",
 		"test:ts:front": "run -T tsc -p admin/tsconfig.json",
-		"test:ts:back": "run -T tsc -p server/tsconfig.json"
+		"test:ts:back": "run -T tsc -p server/tsconfig.json",
+		"prepublishOnly": "yarn build"
 	},
 	"dependencies": {
 		"@faker-js/faker": "^9.4.0",
@@ -94,16 +95,20 @@
 		"displayName": "API Forms",
 		"description": "Create custom forms for websites "
 	},
-	"name": "strapi-api-forms",
+	"name": "@ef2/strapi-api-forms",
 	"description": "Create custom forms for websites ",
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "git+ssh://git@github.com/daandegooijer/strapi-api-forms.git"
+		"url": "git+https://github.com/ef2-digital/strapi-api-forms-v5.git"
 	},
 	"bugs": {
-		"url": "https://github.com/daandegooijer/strapi-api-forms/issues"
+		"url": "https://github.com/ef2-digital/strapi-api-forms-v5/issues"
 	},
-	"homepage": "https://github.com/daandegooijer/strapi-api-forms#readme",
-	"author": "Daan de Gooijer <info@daandegooijer.nl>"
+	"homepage": "https://github.com/ef2-digital/strapi-api-forms-v5#readme",
+	"author": "Daan de Gooijer <info@daandegooijer.nl>",
+	"packageManager": "yarn@4.9.2",
+	"engines": {
+		"node": ">=18.0.0 <=22.x.x"
+	}
 }
