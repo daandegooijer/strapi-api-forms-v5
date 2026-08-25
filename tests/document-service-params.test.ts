@@ -114,6 +114,45 @@ describe('the scanner behind that guard', () => {
 		expect(variable[0].keys).toEqual(['sort', 'start', 'limit']);
 	});
 
+	it('reads the keys of a conditional spread', () => {
+		const calls = findDocumentServiceCalls(`
+			await strapi.documents(uid).findMany({
+				status,
+				...(locale && { where: { locale } }),
+				populate,
+			});
+		`);
+
+		expect(calls[0].keys).toEqual(['status', 'where', 'populate']);
+	});
+
+	it('reports a spread it cannot read', () => {
+		const calls = findDocumentServiceCalls(`await strapi.documents(uid).findMany({ ...params.query });`);
+
+		expect(calls[0].unresolved).toEqual(['...params.query']);
+	});
+
+	it('is not thrown off by a regular expression holding a quote', () => {
+		// One unhandled pattern used to blank the rest of the file, which took
+		// every call after it out of sight and left the guard reporting nothing.
+		const calls = findDocumentServiceCalls(`
+			const uids = content.replace(/api::([^"]+)/g, (match) => match);
+			await strapi.documents(uid).findMany({ where: { slug } });
+		`);
+
+		expect(calls).toHaveLength(1);
+		expect(calls[0].keys).toEqual(['where']);
+	});
+
+	it('still treats a slash after a value as division', () => {
+		const calls = findDocumentServiceCalls(`
+			const half = total / 2;
+			await strapi.documents(uid).findMany({ limit: half, where: { slug } });
+		`);
+
+		expect(calls[0].keys).toEqual(['limit', 'where']);
+	});
+
 	it('ignores keys that only look like parameters', () => {
 		const calls = findDocumentServiceCalls(`
 			await strapi.documents(uid).findMany({

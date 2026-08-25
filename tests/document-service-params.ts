@@ -23,16 +23,68 @@ const DOCUMENT_METHODS = [
 
 const BACKSLASH = String.fromCharCode(92);
 
+// A slash after one of these opens a regular expression rather than dividing.
+const KEYWORDS_BEFORE_REGEX = [
+	'return',
+	'typeof',
+	'instanceof',
+	'case',
+	'in',
+	'of',
+	'new',
+	'delete',
+	'void',
+	'do',
+	'else',
+	'yield',
+	'await',
+];
+
 export interface CallSite {
 	method: string;
 	keys: string[];
 	unresolved: string[];
 }
 
+interface ObjectLiteral {
+	keys: string[];
+	spreads: string[];
+	unreadable: string[];
+}
+
 /**
- * Blanks out comments and string bodies so that a colon inside either one is
- * never mistaken for an object key. Lengths are preserved, which keeps every
- * index valid in the original source.
+ * Decides whether the slash at `at` opens a regular expression. What precedes it
+ * settles that: after a value or a closing bracket a slash divides, and anywhere
+ * else it opens a literal.
+ */
+function opensRegex(code: string[], at: number): boolean {
+	let i = at - 1;
+
+	while (i >= 0 && /\s/.test(code[i])) {
+		i--;
+	}
+
+	if (i < 0) {
+		return true;
+	}
+
+	if (!/[\w$)\]]/.test(code[i])) {
+		return true;
+	}
+
+	// `return /x/` reads as a value, not as a division.
+	let start = i;
+	while (start >= 0 && /[\w$]/.test(code[start])) {
+		start--;
+	}
+
+	return KEYWORDS_BEFORE_REGEX.includes(code.slice(start + 1, i + 1).join(''));
+}
+
+/**
+ * Blanks out comments, string bodies and regular expressions so that a colon or
+ * a brace inside any of them is never mistaken for code. Lengths are preserved,
+ * which keeps every index valid in the original source.
  */
 function blankNonCode(source: string): string {
 	const out = source.split('');
@@ -70,6 +122,34 @@ function blankNonCode(source: string): string {
 			while (j < source.length && source[j] !== char) {
 				j += source[j] === BACKSLASH ? 2 : 1;
 			}
+			blankUntil(Math.min(j + 1, source.length));
+			continue;
+		}
+
+		// A regular expression can hold quotes and braces that are not code. One
+		// unhandled quote inside a pattern would blank the rest of the file and
+		// take every call after it out of sight.
+		if (char === '/' && opensRegex(out, i)) {
+			let j = i + 1;
+			let inCharacterClass = false;
+
+			while (j < source.length && source[j] !== '\n') {
+				if (source[j] === BACKSLASH) {
+					j += 2;
+					continue;
+				}
+
+				if (source[j] === '[') {
+					inCharacterClass = true;
+				} else if (source[j] === ']') {
+					inCharacterClass = false;
+				} else if (source[j] === '/' && !inCharacterClass) {
+					break;
+				}
+
+				j++;
+			}
+
 			blankUntil(Math.min(j + 1, source.length));
 			continue;
 		}
@@ -125,20 +205,39 @@ function splitEntries(inner: string): string[] {
 }
 
 /** The keys and the spread identifiers directly inside an object literal. */
-function readObjectLiteral(code: string, open: number): { keys: string[]; spreads: string[] } {
+function readObjectLiteral(code: string, open: number): ObjectLiteral {
 	const close = matchBracket(code, open);
 	const keys: string[] = [];
 	const spreads: string[] = [];
+	const unreadable: string[] = [];
 
 	if (close === -1) {
-		return { keys, spreads };
+		return { keys, spreads, unreadable };
 	}
 
 	for (const entry of splitEntries(code.slice(open + 1, close))) {
-		const spread = /^\.\.\.([A-Za-z_$][\w$]*)$/.exec(entry);
+		if (entry.startsWith('...')) {
+			const identifier = /^\.\.\.([A-Za-z_$][\w$]*)$/.exec(entry);
 
-		if (spread) {
-			spreads.push(spread[1]);
+			if (identifier) {
+				spreads.push(identifier[1]);
+				continue;
+			}
+
+			// A conditional spread such as `...(locale && { locale })` carries its
+			// keys in the object literal inside the expression. Reading only the
+			// first one is enough: that is the object being spread.
+			const brace = entry.indexOf('{');
+
+			if (brace === -1) {
+				unreadable.push(entry);
+				continue;
+			}
+
+			const inner = readObjectLiteral(entry, brace);
+			keys.push(...inner.keys);
+			spreads.push(...inner.spreads);
+			unreadable.push(...inner.unreadable);
 			continue;
 		}
 
@@ -154,11 +253,11 @@ function readObjectLiteral(code: string, open: number): { keys: string[]; spread
 		}
 	}
 
-	return { keys, spreads };
+	return { keys, spreads, unreadable };
 }
 
 /** Top-level keys of `const <name> = { ... }` in the same file. */
-function resolveObjectVariable(code: string, name: string): { keys: string[]; spreads: string[] } | null {
+function resolveObjectVariable(code: string, name: string): ObjectLiteral | null {
 	const declaration = new RegExp(`\\b(?:const|let|var)\\s+${name}\\s*(?::[^=]+)?=\\s*\\{`).exec(code);
 
 	if (!declaration) {
@@ -208,6 +307,7 @@ export function findDocumentServiceCalls(source: string): CallSite[] {
 			const literal = readObjectLiteral(code, argOpen + argument[0].length);
 			keys.push(...literal.keys);
 			pending.push(...literal.spreads);
+			unresolved.push(...literal.unreadable);
 		} else {
 			pending.push(argument[1]);
 		}
@@ -223,6 +323,7 @@ export function findDocumentServiceCalls(source: string): CallSite[] {
 
 			keys.push(...resolved.keys);
 			pending.push(...resolved.spreads);
+			unresolved.push(...resolved.unreadable);
 		}
 
 		calls.push({ method: call[1], keys, unresolved });
