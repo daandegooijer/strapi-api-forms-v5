@@ -63,12 +63,21 @@ describe('document service parameters', () => {
 
 		for (const file of sourceFiles(SERVER_SOURCE)) {
 			const calls = findDocumentServiceCalls(readFileSync(file, 'utf8'));
+			const where = (what: string) => `${relative(SERVER_SOURCE, file)}: ${what}`;
 
 			for (const call of calls) {
 				for (const key of call.keys) {
 					if (!allowed.includes(key)) {
-						violations.push(`${relative(SERVER_SOURCE, file)}: ${call.method}({ ${key} })`);
+						violations.push(where(`${call.method}({ ${key} })`));
 					}
+				}
+
+				// A call whose parameters cannot be read is not a call that was
+				// checked. Handing `ctx.params` to the document service is exactly how
+				// the wrong key slips through, so this has to fail as loudly as a key
+				// that is known to be wrong.
+				for (const argument of call.unresolved) {
+					violations.push(where(`${call.method}(${argument}) cannot be read`));
 				}
 			}
 		}
@@ -168,5 +177,17 @@ describe('the scanner behind that guard', () => {
 		const calls = findDocumentServiceCalls(`await strapi.documents(uid).findOne(ctx.params);`);
 
 		expect(calls[0].unresolved).not.toEqual([]);
+	});
+
+	it('reports a key it cannot read statically', () => {
+		const calls = findDocumentServiceCalls(`
+			await strapi.documents(uid).findMany({ 'where': { slug }, [key]: value, populate });
+		`);
+
+		// The quoted key itself is blanked along with every other string, so what
+		// comes back is what is left of the entry. It being reported at all is the
+		// point.
+		expect(calls[0].keys).toEqual(['populate']);
+		expect(calls[0].unresolved).toEqual([': { slug }', '[key]: value']);
 	});
 });

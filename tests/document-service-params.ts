@@ -241,8 +241,10 @@ function readObjectLiteral(code: string, open: number): ObjectLiteral {
 			continue;
 		}
 
-		// A key is written out, given in shorthand, or computed. A computed or a
-		// quoted one cannot be read statically, and there are none of those here.
+		// A key is written out or given in shorthand. A quoted or computed one
+		// cannot be read statically, and neither can a method. Report those rather
+		// than pass over them, so that an unreadable call fails the guard instead
+		// of quietly satisfying it.
 		const written = /^([A-Za-z_$][\w$]*)\s*:/.exec(entry);
 		const shorthand = /^([A-Za-z_$][\w$]*)$/.exec(entry);
 
@@ -250,6 +252,8 @@ function readObjectLiteral(code: string, open: number): ObjectLiteral {
 			keys.push(written[1]);
 		} else if (shorthand) {
 			keys.push(shorthand[1]);
+		} else {
+			unreadable.push(entry);
 		}
 	}
 
