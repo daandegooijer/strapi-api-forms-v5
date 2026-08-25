@@ -39,8 +39,13 @@ export default {
 					? notification.to
 					: getValueFromSubmissionByKey(notification.to, fields);
 
-			if (!emailAddress) {
-				strapi.log.error('No valid email address found for sending notification.');
+			// getValueFromSubmissionByKey returns "-" when the submission holds no field
+			// by that name, so an address has to be checked and not merely be present.
+			// Handing "-" to the provider turns a misconfiguration into a failed send.
+			if (!emailAddress || !validateEmail(emailAddress)) {
+				strapi.log.error(
+					`No valid email address for the ${notification.identifier} notification of form ${form?.id}, resolved from "${notification.to}".`
+				);
 				return;
 			}
 

@@ -51,9 +51,12 @@ export default {
         throw new ForbiddenError('No form found');
       }
 
-      // // ✅ Fetch the related form with notifications
+      // The document service silently drops parameters it does not recognise, and
+      // "where" is one of them. Passing it left this query without a filter, so it
+      // returned the first form in the table instead of the one that was submitted,
+      // and every notification carried that form's recipient, subject and fields.
       const form = await strapi.documents('plugin::api-forms.form').findFirst({
-        where: { id: formId },
+        filters: { id: formId },
         populate: ['notifications'],
       });
 
