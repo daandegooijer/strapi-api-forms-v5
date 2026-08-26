@@ -1,0 +1,56 @@
+name: Checks
+
+# This repository had no automated checks at all. A bug that shipped in 2.4.5 got
+# through because nothing here runs the code: the plugin sent every notification
+# through the wrong form after Strapi stopped accepting a parameter it had always
+# accepted before. The tests guard that, so they have to run somewhere.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  checks:
+    name: checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # The upper bound in engines is 22.x.
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Yarn 4 comes from the packageManager field, and the yarn on the runner
+      # refuses to act on it until corepack is on. That also rules out
+      # setup-node's own yarn cache, which calls yarn before this step can run.
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Typecheck the server
+        run: yarn test:ts:back
+
+      - name: Typecheck the admin
+        run: yarn test:ts:front
+
+      - name: Run the tests
+        run: yarn test
+
+      # prepublishOnly builds as well, but a build that only breaks at publish
+      # time breaks when there is least room to deal with it.
+      - name: Build
+        run: yarn build

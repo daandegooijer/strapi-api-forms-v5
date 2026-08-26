@@ -33,14 +33,22 @@ export default {
 				messageWithReferer += `<br><br>Submitted from: <a href="${referer}" target="_blank" rel="noopener noreferrer">${referer}</a>`;
 			}
 
-			const emailAddress = providerSettings.overrideEmailAddress
-				? providerSettings.overrideEmailAddress
+			const override = providerSettings.overrideEmailAddress;
+			const emailAddress = override
+				? override
 				: validateEmail(notification.to)
 					? notification.to
 					: getValueFromSubmissionByKey(notification.to, fields);
 
-			if (!emailAddress) {
-				strapi.log.error('No valid email address found for sending notification.');
+			// getValueFromSubmissionByKey returns "-" when the submission holds no field
+			// by that name, so an address has to be checked and not merely be present.
+			// Handing "-" to the provider turns a misconfiguration into a failed send.
+			if (!emailAddress || !validateEmail(emailAddress)) {
+				const source = override ? 'the provider override' : `the recipient "${notification.to}"`;
+
+				strapi.log.error(
+					`No valid email address for the ${notification.identifier} notification of form ${form?.id}, resolved from ${source}.`
+				);
 				return;
 			}
 

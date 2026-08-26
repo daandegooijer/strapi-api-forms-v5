@@ -5,7 +5,9 @@ import { EmailSubmissionType } from '../../../admin/src/utils/types';
 
 export default factories.createCoreController('plugin::api-forms.notification', ({ strapi }) => ({
 	async findOne(ctx) {
-		const data = await strapi.documents('plugin::api-forms.notification').findOne({ ...ctx.params, populate: { form: '*' } });
+		const data = await strapi
+			.documents('plugin::api-forms.notification')
+			.findOne({ documentId: ctx.params.documentId, populate: ['form'] });
 		return { data };
 	},
 	async test(ctx) {

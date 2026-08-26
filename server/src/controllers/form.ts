@@ -7,7 +7,16 @@ import { generateNotificationHtml } from '../functions';
 
 export default factories.createCoreController('plugin::api-forms.form', ({ strapi }) => ({
 	async findOne(ctx) {
-		const data = await strapi.documents('plugin::api-forms.form').findOne(ctx.params);
+		// Two routes reach this handler. The admin one carries `:documentId`, the
+		// content API one `:id`. Handing the params object over whole let the
+		// document service drop the key it does not know, and a findOne without a
+		// documentId answers with the first form in the table whatever was asked
+		// for.
+		const { documentId, id } = ctx.params;
+
+		const data = documentId
+			? await strapi.documents('plugin::api-forms.form').findOne({ documentId })
+			: await strapi.documents('plugin::api-forms.form').findFirst({ filters: { id } });
 
 		return { data };
 	},
@@ -188,7 +197,7 @@ Keep the schema concise and focus on user description.
 		return { response };
 	},
 	async delete(ctx) {
-		return await strapi.documents('plugin::api-forms.form').delete(ctx.params);
+		return await strapi.documents('plugin::api-forms.form').delete({ documentId: ctx.params.documentId });
 	},
 
 	async getFormConfig(ctx) {
